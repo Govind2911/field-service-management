@@ -36,6 +36,9 @@ public class RoleBasedPermissions {
 				                     Permissions.CANCEL_WO,
 				                     Permissions.CLOSE_WO,
 				                     
+				                     Permissions.VIEW_ATTACHMENT,
+				                     Permissions.DOWNLOAD_ATTACHMENT,
+				                     
 				                     Permissions.ADD_PARTS,
 				                     Permissions.UPDATE_PARTS,
 				                     Permissions.VIEW_PARTS,
@@ -66,7 +69,11 @@ public class RoleBasedPermissions {
 				                          Permissions.ASSIGN_WO,
 				                          Permissions.CANCEL_WO,
 				                          
+				                          Permissions.VIEW_ATTACHMENT,
+						                  Permissions.DOWNLOAD_ATTACHMENT,
+				                          
 				                          Permissions.VIEW_DASHBOARD
+				                          
 				                          )));
 		
 		
@@ -84,11 +91,18 @@ public class RoleBasedPermissions {
 				                              Permissions.VIEW_PARTS,
 				                              
 				                              Permissions.ADD_TIME_LOGS,
-				                              Permissions.VIEW_TIME_LOGS
+				                              Permissions.VIEW_TIME_LOGS,
+				                              
+				                              Permissions.UPLOAD_ATTACHMENT,
+				                              Permissions.VIEW_ATTACHMENT
+							              
 				                              )));
 		
 		permission.put(Role.CUSTOMER, new HashSet<>(Arrays.asList(
 				                               Permissions.RAISE_REQUEST,
+				                               Permissions.UPLOAD_ATTACHMENT,
+				                               Permissions.VIEW_ATTACHMENT,
+				                               Permissions.DELETE_ATTACHMENT,
 				                               Permissions.VIEW_OWN_REQUEST_STATUS
 				                               )));
 		
