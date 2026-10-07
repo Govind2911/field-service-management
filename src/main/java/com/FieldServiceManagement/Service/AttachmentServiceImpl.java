@@ -38,7 +38,7 @@ public class AttachmentServiceImpl implements AttachmentService{
 				attach.setContentType(file.getContentType());
 				attach.setSizeOfFile(file.getSize());
 				attach.setStoragePath(uploadResult.get("secure_url").toString());
-				attach.setCloudinaryId(uploadResult.get("cloud_id").toString());
+				attach.setCloudinaryId(uploadResult.get("public_id").toString());
 				return attachmentRepo.save(attach);
 				
 			} catch (Exception e) {
@@ -56,20 +56,27 @@ public class AttachmentServiceImpl implements AttachmentService{
 		}
 		
 		private void validateFile(MultipartFile file) {
-			
-			if(file.isEmpty()) {
-				throw new RuntimeException("file can not be empty");
-			}
-			
-			long MAX=10*1024*1024;
-			if(file.getSize()>MAX) {
-				throw new RuntimeException("Max file size is 10MB");
-			}
-			
-			List<String>allowed= Arrays.asList("image/png","image/jpeg","video/mp4");
-			throw new RuntimeException("Invalid file format");
+
+		    if (file.isEmpty()) {
+		        throw new RuntimeException("File cannot be empty");
+		    }
+
+		    long MAX = 10 * 1024 * 1024; // 10 MB
+
+		    if (file.getSize() > MAX) {
+		        throw new RuntimeException("Max file size is 10MB");
+		    }
+
+		    List<String> allowed = Arrays.asList(
+		            "image/png",
+		            "image/jpeg",
+		            "video/mp4"
+		    );
+
+		    if (!allowed.contains(file.getContentType())) {
+		        throw new RuntimeException("Invalid file format");
+		    }
 		}
-		
 		
 
 	}

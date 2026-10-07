@@ -34,7 +34,7 @@ public class AttachmentController {
    }
    
    @GetMapping("/{id}")
-   public ResponseEntity<Attachment>getById(Long id){
+   public ResponseEntity<Attachment>getById(@PathVariable Long id){
 	   return ResponseEntity.ok(attachmentService.getById(id));
    }
    
