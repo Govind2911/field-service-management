@@ -1,10 +1,14 @@
 package com.FieldServiceManagement.Security;
 
-import java.util.Set;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.FieldServiceManagement.ENUM.Permissions;
 import com.FieldServiceManagement.Entity.UserAuth;
@@ -29,10 +33,16 @@ public class CustomUserDetailsService implements UserDetailsService {
                 RoleBasedPermissions.getRoleBasedPermission()
                         .get(user.getRole());
 
+        Set<GrantedAuthority> authorities = perms.stream()
+                .map(permission ->
+                        new SimpleGrantedAuthority(permission.name())
+                )
+                .collect(Collectors.toSet());
+
         return new org.springframework.security.core.userdetails.User(
                 user.getUserEmail(),
                 user.getPassword(),
-                null
+                authorities
         );
     }
 }

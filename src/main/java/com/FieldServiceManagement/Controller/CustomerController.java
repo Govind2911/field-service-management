@@ -37,10 +37,15 @@ public class CustomerController {
 		return ResponseEntity.ok(customerService.updateCustomer(email, customer));
 	}
 	
-	@GetMapping("/{email}")
+	@GetMapping("/email/{email}")
 	public ResponseEntity<Customer>getCustomerEmail(@PathVariable String email){
 		return ResponseEntity.ok(customerService.getCustomerByEmail(email));
 		
+	}
+	
+	@GetMapping("/{id}")
+	public ResponseEntity<Customer> getCustomerById(@PathVariable Long id) {
+	    return ResponseEntity.ok(customerService.getCustomer(id));
 	}
 	
 	@GetMapping("/all")
@@ -49,7 +54,7 @@ public class CustomerController {
 		
 	}
 	
-	@DeleteMapping("/{id}")
+	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<String>deleteCustomer(@PathVariable Long id){
 		customerService.deleteCustomer(id);
 		return ResponseEntity.ok("Customer Deleted Successfully");

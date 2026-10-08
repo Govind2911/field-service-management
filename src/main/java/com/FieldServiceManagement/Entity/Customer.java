@@ -32,7 +32,7 @@ public class Customer {
  private String companyName;
  @Column(nullable=false)
  private String contactPerson;
- @Column(nullable=false)
+ @Column(nullable = false, unique = true)
  private String email;
  @Column(nullable=false)
  private String phone;

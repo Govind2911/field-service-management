@@ -32,17 +32,27 @@ public class CustomerServiceImpl implements CustomerService {
 	}
 	
 	@Override
-	public Customer updateCustomer(String email,Customer customer) {
-		Customer existingCustomer = customerRepo.findByEmail(email)
-				.orElseThrow(()-> new RuntimeException("Customer not found"));
-				
-				existingCustomer.setCompanyName(customer.getCompanyName());
-				existingCustomer.setContactPerson(customer.getContactPerson());
-				existingCustomer.setPhone(customer.getPhone());
-				existingCustomer.setAddress(customer.getAddress());
-				existingCustomer.setActive(customer.isActive());
-				
-				return customerRepo.save(existingCustomer);
+	public Customer updateCustomer(String email, Customer customer) {
+
+	    Customer existingCustomer = customerRepo.findByEmail(email.trim().toLowerCase())
+	            .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+	    String newEmail = customer.getEmail().trim().toLowerCase();
+
+	    // Check only if email is actually being changed
+	    if (!existingCustomer.getEmail().equals(newEmail)
+	            && customerRepo.existsByEmail(newEmail)) {
+	        throw new RuntimeException("Email already exists");
+	    }
+
+	    existingCustomer.setCompanyName(customer.getCompanyName());
+	    existingCustomer.setContactPerson(customer.getContactPerson());
+	    existingCustomer.setEmail(newEmail);
+	    existingCustomer.setPhone(customer.getPhone());
+	    existingCustomer.setAddress(customer.getAddress());
+	    existingCustomer.setActive(customer.isActive());
+
+	    return customerRepo.save(existingCustomer);
 	}
 	@Override
 	public Customer getCustomer(Long id) {
@@ -51,7 +61,7 @@ public class CustomerServiceImpl implements CustomerService {
 	}
 	@Override
 	public Customer getCustomerByEmail(String email) {
-		return customerRepo.findByEmail(email).orElseThrow(()-> new RuntimeException("User not Found"));
+		return customerRepo.findByEmail(email).orElseThrow(()-> new RuntimeException("Customer not Found"));
 	}
 	@Override
 	public List<Customer>getAllCustomer(){
