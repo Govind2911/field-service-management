@@ -30,7 +30,7 @@ public class AttachmentServiceImpl implements AttachmentService{
 			try {
 				Map<String,Object>uploadOption= new HashMap<>();
 				uploadOption.put("resource_type", "auto");
-				
+				uploadOption.put("folder", folder);
 				Map uploadResult= cloudinary.uploader().upload(file.getBytes(), uploadOption);
 				
 				Attachment attach= new Attachment();
@@ -42,7 +42,7 @@ public class AttachmentServiceImpl implements AttachmentService{
 				return attachmentRepo.save(attach);
 				
 			} catch (Exception e) {
-				throw new RuntimeException("Cloud uploa failed");
+				throw new RuntimeException("Cloudinary upload failed: " + e.getMessage(), e);
 			}
 		}
 		
