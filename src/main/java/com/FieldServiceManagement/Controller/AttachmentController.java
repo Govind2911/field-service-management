@@ -2,10 +2,9 @@ package com.FieldServiceManagement.Controller;
 
 import java.io.InputStream;
 import java.net.URL;
-
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,26 +37,44 @@ public class AttachmentController {
 	   return ResponseEntity.ok(attachmentService.getById(id));
    }
    
-   
-   
    @GetMapping("/cloudDownload/{id}")
-   public ResponseEntity<Void>download(@PathVariable Long id){
-	   Attachment attachment = attachmentService.getById(id);
-	   return ResponseEntity.status(HttpStatus.FOUND).header(HttpHeaders.LOCATION, attachment.getStoragePath()).build();
+   public ResponseEntity<InputStreamResource> download(
+           @PathVariable Long id) throws Exception {
+
+       Attachment attachment = attachmentService.getById(id);
+
+       URL url = new URL(attachment.getStoragePath());
+       InputStream inputStream = url.openStream();
+
+       return ResponseEntity.ok()
+               .contentType(MediaType.APPLICATION_OCTET_STREAM)
+               .header(
+                       HttpHeaders.CONTENT_DISPOSITION,
+                       "attachment; filename=\"" + attachment.getFilename() + "\""
+               )
+               .body(new InputStreamResource(inputStream));
    }
    
    @GetMapping("/stream/{id}")
-	public ResponseEntity<InputStream> streamFile(@PathVariable Long id) throws Exception{
-		
-		Attachment attach= attachmentService.getById(id);
-		URL url =new URL(attach.getStoragePath());
-		InputStream inputStream= url.openStream();
-		return ResponseEntity.ok().header(HttpHeaders.CONTENT_LOCATION,
-				                  "attachment; fileName=\"" + attach.getFilename()+"\"")
-				.contentType(MediaType.parseMediaType(attach.getContentType()))
-				.body(inputStream);
-	}
-	
+   public ResponseEntity<InputStreamResource> streamFile(
+           @PathVariable Long id) throws Exception {
+
+       Attachment attachment = attachmentService.getById(id);
+
+       URL url = new URL(attachment.getStoragePath());
+       InputStream inputStream = url.openStream();
+
+       return ResponseEntity.ok()
+               .contentType(MediaType.parseMediaType(
+                       attachment.getContentType()
+               ))
+               .header(
+                       HttpHeaders.CONTENT_DISPOSITION,
+                       "inline; filename=\"" + attachment.getFilename() + "\""
+               )
+               .body(new InputStreamResource(inputStream));
+   }
+  
 	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<String>deleteFile(@PathVariable Long id){
 		attachmentService.delete(id);
