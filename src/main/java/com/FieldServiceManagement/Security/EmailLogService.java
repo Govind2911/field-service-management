@@ -53,6 +53,7 @@ public class EmailLogService {
 		}
 		
 		EmailLog logs= new EmailLog(emailLog.recepientEmail,emailLog.subject,emailLog.body);
+		logs.setSentStatus(sentStatus); 
 		emailLogRepo.save(logs);
 		
 		return sentStatus ?"Email sent Successfully":"Email sending failed";

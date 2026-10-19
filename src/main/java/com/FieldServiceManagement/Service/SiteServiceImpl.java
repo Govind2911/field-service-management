@@ -54,20 +54,24 @@ public class SiteServiceImpl implements SiteService {
 
 	@Override
 	public Site getSite(Long id) {
-		
-		return null;
+	    return siteRepo.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Site not found"));
 	}
 
 	@Override
 	public List<Site> getSiteByCustomer(Long customerId) {
-		
-		return null;
+	    if (!customerRepo.existsById(customerId)) {
+	        throw new RuntimeException("Customer not found");
+	    }
+
+	    return siteRepo.findByCustomerId(customerId);
 	}
 
 	@Override
 	public void deleteSite(Long id) {
-		
-		
-	}
+	    Site site = siteRepo.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Site not found"));
 
+	    siteRepo.delete(site);
+	}
 }
