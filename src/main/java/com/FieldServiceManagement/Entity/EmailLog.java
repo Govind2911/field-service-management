@@ -11,7 +11,7 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
-//@AllArgsConstructor
+@AllArgsConstructor
 @Builder
 public class EmailLog {
 	@Id
