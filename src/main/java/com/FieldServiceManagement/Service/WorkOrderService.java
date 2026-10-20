@@ -16,7 +16,7 @@ public interface WorkOrderService {
 
     List<WorkOrderResponseDTO> getAll();
 
-    WorkOrderResponseDTO getById(Long id);
+    WorkOrderResponseDTO getById(Long id, String email);
 
     WorkOrderResponseDTO assign(
             Long workOrderId,
@@ -29,4 +29,8 @@ public interface WorkOrderService {
             String email);
 
     List<WorkOrderHistoryResponseDTO> getHistory(Long workOrderId);
+    
+    List<WorkOrderResponseDTO> getMyOrders(String email);
+
+    WorkOrderResponseDTO getMyOrderById(Long id, String email);
 }
