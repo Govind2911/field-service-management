@@ -72,6 +72,16 @@ public class WorkOrder {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "sla_due_at")
+    private LocalDateTime slaDueAt;
+
+    @Column(name = "sla_breached", nullable = false)
+    private boolean slaBreached = false;
+
+    @Column(name = "sla_breached_at")
+    private LocalDateTime slaBreachedAt;
+    
+    
     @PrePersist
     public void beforeInsert() {
         if (workOrderNumber == null || workOrderNumber.isBlank()) {
@@ -80,9 +90,28 @@ public class WorkOrder {
                             .substring(0, 8).toUpperCase();
         }
 
+        initializeSla();
+
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
         updatedAt = now;
+    }
+
+    public void initializeSla() {
+        if (priority == null) {
+            priority = WorkOrderPriority.MEDIUM;
+        }
+
+        if (slaDueAt == null) {
+            int hours = switch (priority) {
+                case URGENT -> 4;
+                case HIGH -> 8;
+                case MEDIUM -> 24;
+                case LOW -> 72;
+            };
+
+            slaDueAt = LocalDateTime.now().plusHours(hours);
+        }
     }
 
     @PreUpdate
@@ -209,5 +238,28 @@ public class WorkOrder {
 	public void setUpdatedAt(LocalDateTime updatedAt) {
 		this.updatedAt = updatedAt;
 	}
-    
+	public LocalDateTime getSlaDueAt() {
+	    return slaDueAt;
+	}
+
+	public void setSlaDueAt(LocalDateTime slaDueAt) {
+	    this.slaDueAt = slaDueAt;
+	}
+
+	public boolean isSlaBreached() {
+	    return slaBreached;
+	}
+
+	public void setSlaBreached(boolean slaBreached) {
+	    this.slaBreached = slaBreached;
+	}
+
+	public LocalDateTime getSlaBreachedAt() {
+	    return slaBreachedAt;
+	}
+
+	public void setSlaBreachedAt(LocalDateTime slaBreachedAt) {
+	    this.slaBreachedAt = slaBreachedAt;
+	}
+	
 }

@@ -1,6 +1,6 @@
 package com.FieldServiceManagement.Repository;
 
-
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +16,10 @@ public interface WorkOrderRepository
     List<WorkOrder> findByAssignedTechnicianId(Long technicianId);
 
     List<WorkOrder> findByStatus(WorkOrderStatus status);
+    
+    List<WorkOrder> findBySlaBreachedTrue();
+
+    List<WorkOrder> findBySlaBreachedFalseAndSlaDueAtBefore(
+        LocalDateTime now
+    );
 }
