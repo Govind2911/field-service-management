@@ -57,7 +57,37 @@ public class SecurityConfig {
     	.authorizeHttpRequests(auth->auth.requestMatchers("/api/user_auth/**","/api/email_log/**")
     			                         .permitAll()
     			                         .anyRequest()
-    			                         .authenticated());
+    			                         .authenticated())
+    	 .exceptionHandling(exception -> exception
+    	            .authenticationEntryPoint((request, response, ex) -> {
+    	                System.err.println(
+    	                    "401 Authentication failed: "
+    	                    + request.getRequestURI()
+    	                    + " | " + ex.getMessage()
+    	                );
+
+    	                response.setStatus(401);
+    	                response.setContentType("application/json");
+    	                response.getWriter().write(
+    	                    "{\"message\":\"Authentication required or token invalid\"}"
+    	                );
+    	            })
+    	            .accessDeniedHandler((request, response, ex) -> {
+    	                System.err.println(
+    	                    "403 Access denied: "
+    	                    + request.getRequestURI()
+    	                    + " | " + ex.getMessage()
+    	                );
+
+    	                response.setStatus(403);
+    	                response.setContentType("application/json");
+    	                response.getWriter().write(
+    	                    "{\"message\":\"Access denied\",\"path\":\""
+    	                    + request.getRequestURI() + "\"}"
+    	                );
+    	            })
+    	        );
+    	
     	
     	http.addFilterBefore(
     	        jwtAuthenticationFilter(),
