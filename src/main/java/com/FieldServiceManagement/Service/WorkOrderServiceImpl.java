@@ -1,5 +1,7 @@
 package com.FieldServiceManagement.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import com.FieldServiceManagement.Entity.Customer;
+import com.FieldServiceManagement.Entity.WorkOrder;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -52,55 +54,76 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 	                                "Authenticated user not found"));
 	  }
 
-	    @Transactional
-	    public WorkOrderResponseDTO create(
-	            CreateWorkOrderDTO dto, String email) 
-	    {
+	 @Transactional
+	 public WorkOrderResponseDTO create(
+	         CreateWorkOrderDTO dto, String email) {
 
-	        UserAuth creator = getUser(email);
+	     UserAuth creator = getUser(email);
 
-	        if (creator.getRole() != Role.MANAGER
-	                && creator.getRole() != Role.DISPATCHER) {
-	            throw new IllegalArgumentException(
-	                    "Only MANAGER or DISPATCHER can create work orders");
-	        }
+	     Customer customer;
+	     Site site;
 
-	        Customer customer = customerRepository
-	                .findById(dto.getCustomerId())
-	                .orElseThrow(() ->
-	                        new IllegalArgumentException("Customer not found"));
+	     if (creator.getRole() == Role.CUSTOMER) {
 
-	        Site site = siteRepository.findById(dto.getSiteId())
-	                .orElseThrow(() ->
-	                        new IllegalArgumentException("Site not found"));
+	         customer = customerRepository.findByEmail(email)
+	                 .orElseThrow(() ->
+	                         new IllegalArgumentException(
+	                                 "Customer profile not found"));
 
-	        if (site.getCustomer() == null
-	                || !site.getCustomer().getId().equals(customer.getId())) {
-	            throw new IllegalArgumentException(
-	                    "Selected site does not belong to this customer");
-	        }
+	         // Customer cannot create an order for another customer.
+	         // The customer ID comes from the authenticated account.
+	         site = siteRepository.findById(dto.getSiteId())
+	                 .orElseThrow(() ->
+	                         new IllegalArgumentException("Site not found"));
 
-	        WorkOrder wo = new WorkOrder();
-	        wo.setTitle(dto.getTitle().trim());
-	        wo.setDescription(dto.getDescription().trim());
-	        wo.setPriority(dto.getPriority() == null
-	                ? com.FieldServiceManagement.ENUM.WorkOrderPriority.MEDIUM
-	                : dto.getPriority());
-	        wo.setCustomer(customer);
-	        wo.setSite(site);
-	        wo.setCreatedBy(creator);
-	        wo.setScheduledAt(dto.getScheduledAt());
-	        wo.setStatus(WorkOrderStatus.OPEN);
+	         if (site.getCustomer() == null
+	                 || !site.getCustomer().getId()
+	                         .equals(customer.getId())) {
+	             throw new IllegalArgumentException(
+	                     "You can only select your own site");
+	         }
 
-	        WorkOrder saved = workOrderRepository.save(wo);
+	     } else if (creator.getRole() == Role.MANAGER
+	             || creator.getRole() == Role.DISPATCHER) {
 
-	        saveHistory(saved, null, WorkOrderStatus.OPEN,
-	                creator, "Work order created");
+	         customer = customerRepository.findById(dto.getCustomerId())
+	                 .orElseThrow(() ->
+	                         new IllegalArgumentException("Customer not found"));
 
-	        return WorkOrderResponseDTO.from(saved);
-	    }
+	         site = siteRepository.findById(dto.getSiteId())
+	                 .orElseThrow(() ->
+	                         new IllegalArgumentException("Site not found"));
 
-	    
+	         if (site.getCustomer() == null
+	                 || !site.getCustomer().getId().equals(customer.getId())) {
+	             throw new IllegalArgumentException(
+	                     "Selected site does not belong to this customer");
+	         }
+
+	     } else {
+	         throw new IllegalArgumentException(
+	                 "You are not allowed to create work orders");
+	     }
+
+	     WorkOrder wo = new WorkOrder();
+	     wo.setTitle(dto.getTitle().trim());
+	     wo.setDescription(dto.getDescription().trim());
+	     wo.setPriority(dto.getPriority() == null
+	             ? com.FieldServiceManagement.ENUM.WorkOrderPriority.MEDIUM
+	             : dto.getPriority());
+	     wo.setCustomer(customer);
+	     wo.setSite(site);
+	     wo.setCreatedBy(creator);
+	     wo.setScheduledAt(dto.getScheduledAt());
+	     wo.setStatus(WorkOrderStatus.OPEN);
+
+	     WorkOrder saved = workOrderRepository.save(wo);
+
+	     saveHistory(saved, null, WorkOrderStatus.OPEN,
+	             creator, "Work order created");
+
+	     return WorkOrderResponseDTO.from(saved);
+	 }
 	    @Transactional(readOnly = true)
 	    public List<WorkOrderResponseDTO> getAll() 
 	    {
@@ -111,9 +134,42 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 	    }
 	    
 
+	    @Override
 	    @Transactional(readOnly = true)
-	    public WorkOrderResponseDTO getById(Long id) {
-	        return WorkOrderResponseDTO.from(getWorkOrder(id));
+	    public WorkOrderResponseDTO getById(Long id, String email) {
+
+	        UserAuth user = getUser(email);
+	        WorkOrder order = getWorkOrder(id);
+
+	        if (user.getRole() == Role.MANAGER
+	                || user.getRole() == Role.DISPATCHER) {
+	            return WorkOrderResponseDTO.from(order);
+	        }
+
+	        if (user.getRole() == Role.CUSTOMER) {
+	            Customer customer = customerRepository.findByEmail(email)
+	                    .orElseThrow(() -> new IllegalArgumentException(
+	                            "Customer profile not found"));
+
+	            if (order.getCustomer() == null
+	                    || !order.getCustomer().getId()
+	                            .equals(customer.getId())) {
+	                throw new IllegalArgumentException(
+	                        "You cannot access another customer's order");
+	            }
+
+	            return WorkOrderResponseDTO.from(order);
+	        }
+
+	        if (user.getRole() == Role.TECHNICIAN
+	                && order.getAssignedTechnician() != null
+	                && order.getAssignedTechnician().getId()
+	                        .equals(user.getId())) {
+	            return WorkOrderResponseDTO.from(order);
+	        }
+
+	        throw new IllegalArgumentException(
+	                "You are not allowed to access this work order");
 	    }
 
 	    
@@ -293,4 +349,49 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 	        };
 	    }
     
+	    @Transactional(readOnly = true)
+	    @Override
+	    public List<WorkOrderResponseDTO> getMyOrders(String email) {
+
+	        UserAuth user = getUser(email);
+
+	        if (user.getRole() != Role.CUSTOMER) {
+	            throw new IllegalArgumentException(
+	                    "Only customers can access their orders");
+	        }
+
+	        Customer customer = customerRepository.findByEmail(email)
+	                .orElseThrow(() -> new IllegalArgumentException(
+	                        "Customer profile not found for this account"));
+
+	        return workOrderRepository.findByCustomerId(customer.getId())
+	                .stream()
+	                .map(WorkOrderResponseDTO::from)
+	                .toList();
+	    }
+
+	    @Transactional(readOnly = true)
+	    @Override
+	    public WorkOrderResponseDTO getMyOrderById(Long id, String email) {
+
+	        UserAuth user = getUser(email);
+
+	        if (user.getRole() != Role.CUSTOMER) {
+	            throw new IllegalArgumentException(
+	                    "Only customers can access this endpoint");
+	        }
+
+	        Customer customer = customerRepository.findByEmail(email)
+	                .orElseThrow(() -> new IllegalArgumentException(
+	                        "Customer profile not found for this account"));
+
+	        WorkOrder order = getWorkOrder(id);
+
+	        if (!order.getCustomer().getId().equals(customer.getId())) {
+	            throw new IllegalArgumentException(
+	                    "You are not allowed to access this work order");
+	        }
+
+	        return WorkOrderResponseDTO.from(order);
+	    }
 }

@@ -42,11 +42,12 @@ public class WorkOrderController {
 
     @GetMapping("/{id}")
     public ResponseEntity<WorkOrderResponseDTO> getById(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Principal principal) {
 
-        return ResponseEntity.ok(workOrderService.getById(id));
+        return ResponseEntity.ok(
+                workOrderService.getById(id, principal.getName()));
     }
-
     @PatchMapping("/{id}/assign")
     public ResponseEntity<WorkOrderResponseDTO> assign(
             @PathVariable Long id,
@@ -66,6 +67,23 @@ public class WorkOrderController {
         return ResponseEntity.ok(
                 workOrderService.updateStatus(
                         id, dto, principal.getName()));
+    }
+    
+    @GetMapping("/my-orders")
+    public ResponseEntity<List<WorkOrderResponseDTO>> getMyOrders(
+            Principal principal) {
+
+        return ResponseEntity.ok(
+                workOrderService.getMyOrders(principal.getName()));
+    }
+
+    @GetMapping("/my-orders/{id}")
+    public ResponseEntity<WorkOrderResponseDTO> getMyOrderById(
+            @PathVariable Long id,
+            Principal principal) {
+
+        return ResponseEntity.ok(
+                workOrderService.getMyOrderById(id, principal.getName()));
     }
 
     @GetMapping("/{id}/history")
