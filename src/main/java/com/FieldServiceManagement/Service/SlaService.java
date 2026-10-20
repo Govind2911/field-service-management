@@ -1,5 +1,6 @@
 package com.FieldServiceManagement.Service;
-
+import com.FieldServiceManagement.DTO.EmailLogDTO;
+import com.FieldServiceManagement.Security.EmailLogService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,12 +22,16 @@ public class SlaService {
 
     private final WorkOrderRepository workOrderRepository;
     private final UserAuthRepository userAuthRepository;
-
+    private final EmailLogService emailLogService;
+    
     public SlaService(
             WorkOrderRepository workOrderRepository,
-            UserAuthRepository userAuthRepository) {
+            UserAuthRepository userAuthRepository,
+            EmailLogService emailLogService) {
+
         this.workOrderRepository = workOrderRepository;
         this.userAuthRepository = userAuthRepository;
+        this.emailLogService = emailLogService;
     }
 
     private UserAuth getUser(String email) {
@@ -53,26 +58,89 @@ public class SlaService {
     }
 
     // Checks overdue work orders every minute.
-    @Scheduled(fixedRate = 60000)
-    @Transactional
-    public void checkSlaBreaches() {
-    	List<WorkOrder> breachedOrders = new java.util.ArrayList<>();
-    	LocalDateTime now = LocalDateTime.now();
 
-    	for (WorkOrder order : workOrderRepository.findAll()) {
-    	    if (isActive(order)
-    	            && !order.isSlaBreached()
-    	            && order.getSlaDueAt() != null
-    	            && order.getSlaDueAt().isBefore(now)) {
+@Scheduled(fixedRate = 60000)
+@Transactional
+public void checkSlaBreaches() {
+	System.out.println("SLA SCHEDULER RUNNING: " + LocalDateTime.now());
+    List<WorkOrder> breachedOrders = new java.util.ArrayList<>();
+    LocalDateTime now = LocalDateTime.now();
 
-    	        order.setSlaBreached(true);
-    	        order.setSlaBreachedAt(now);
-    	        breachedOrders.add(order);
-    	    }
-    	}
+    for (WorkOrder order : workOrderRepository.findAll()) {
+        if (isActive(order)
+                && !order.isSlaBreached()
+                && order.getSlaDueAt() != null
+                && order.getSlaDueAt().isBefore(now)) {
 
-    	workOrderRepository.saveAll(breachedOrders);
+            order.setSlaBreached(true);
+            order.setSlaBreachedAt(now);
+            breachedOrders.add(order);
+        }
     }
+    System.out.println("NEW BREACHED ORDERS: " + breachedOrders.size());
+    if (breachedOrders.isEmpty()) {
+        return;
+    }
+
+    // Save breach status before sending notifications.
+    workOrderRepository.saveAll(breachedOrders);
+
+    // Find all managers and dispatchers.
+    List<UserAuth> recipients = userAuthRepository.findAll()
+            .stream()
+            .filter(user -> user.getRole() == Role.MANAGER
+                    || user.getRole() == Role.DISPATCHER)
+            .filter(user -> user.getUserEmail() != null
+                    && !user.getUserEmail().isBlank())
+            .toList();
+
+    // Notify only for newly detected breaches.
+    for (WorkOrder order : breachedOrders) {
+        String technician = order.getAssignedTechnician() != null
+                ? order.getAssignedTechnician().getUserName()
+                : "Not assigned";
+
+        String subject = "SLA Breach Alert - "
+                + order.getWorkOrderNumber();
+
+        String body = "<html><body>"
+                + "<h2>SLA Breach Alert</h2>"
+                + "<p>Work Order: " + order.getWorkOrderNumber() + "</p>"
+                + "<p>Title: " + order.getTitle() + "</p>"
+                + "<p>Priority: " + order.getPriority() + "</p>"
+                + "<p>Status: " + order.getStatus() + "</p>"
+                + "<p>SLA Deadline: " + order.getSlaDueAt() + "</p>"
+                + "<p>Assigned Technician: " + technician + "</p>"
+                + "<p>Breach Detected At: "
+                + order.getSlaBreachedAt() + "</p>"
+                + "</body></html>";
+
+        for (UserAuth recipient : recipients) {
+            try {
+                EmailLogDTO email = new EmailLogDTO();
+                email.recepientEmail = recipient.getUserEmail();
+                email.subject = subject;
+                email.body = body;
+
+                // Reuse the existing email and logging system.
+                System.out.println("SENDING SLA EMAIL TO: " + recipient.getUserEmail());
+                String result = emailLogService.notify(email);
+                System.out.println(
+                        "SLA notification for "
+                        + order.getWorkOrderNumber()
+                        + " to " + recipient.getUserEmail()
+                        + ": " + result);
+
+            } catch (Exception ex) {
+                System.err.println(
+                        "SLA notification failed for "
+                        + order.getWorkOrderNumber()
+                        + ": " + ex.getMessage());
+            }
+        }
+    }
+}
+
 
     // Lists active work orders whose SLA deadline has passed.
     @Transactional(readOnly = true)
