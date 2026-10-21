@@ -394,4 +394,22 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
 	        return WorkOrderResponseDTO.from(order);
 	    }
+	    
+	    @Override
+	    @Transactional(readOnly = true)
+	    public List<WorkOrderResponseDTO> getAssignedOrders(String email) {
+
+	        UserAuth user = getUser(email);
+
+	        if (user.getRole() != Role.TECHNICIAN) {
+	            throw new IllegalArgumentException(
+	                    "Only technicians can access assigned orders");
+	        }
+
+	        return workOrderRepository
+	                .findByAssignedTechnicianId(user.getId())
+	                .stream()
+	                .map(WorkOrderResponseDTO::from)
+	                .toList();
+	    }
 }

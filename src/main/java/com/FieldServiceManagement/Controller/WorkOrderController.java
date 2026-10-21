@@ -76,6 +76,14 @@ public class WorkOrderController {
         return ResponseEntity.ok(
                 workOrderService.getMyOrders(principal.getName()));
     }
+    
+    @GetMapping("/technician/assigned")
+    public ResponseEntity<List<WorkOrderResponseDTO>> getAssignedOrders(
+            Principal principal) {
+
+        return ResponseEntity.ok(
+                workOrderService.getAssignedOrders(principal.getName()));
+    }
 
     @GetMapping("/my-orders/{id}")
     public ResponseEntity<WorkOrderResponseDTO> getMyOrderById(
