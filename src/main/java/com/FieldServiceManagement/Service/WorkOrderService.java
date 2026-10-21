@@ -33,4 +33,7 @@ public interface WorkOrderService {
     List<WorkOrderResponseDTO> getMyOrders(String email);
 
     WorkOrderResponseDTO getMyOrderById(Long id, String email);
+    
+    List<WorkOrderResponseDTO> getAssignedOrders(String email);
+    
 }
